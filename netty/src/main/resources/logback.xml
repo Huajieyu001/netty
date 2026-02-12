@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration xmlns="http://ch.qos.logback/xml/ns/logback"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://ch.qos.logback/xml/ns/logback logback.xsd">
+    <!-- Appenders -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- Appender-specific configurations -->
+        <encoder>
+            <pattern>%date{HH:mm:ss.SSS} [%t] %logger - %m%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Loggers -->
+    <logger name="top.huajieyu001" level="debug" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <!-- Root Logger -->
+    <root level="ERROR">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
