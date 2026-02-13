@@ -5,10 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.channels.*;
+import java.util.*;
 
 /**
  * @Author huajieyu
@@ -20,7 +18,7 @@ import java.util.List;
 public class P022Server {
 
     public static void main(String[] args) throws IOException {
-        testNonBlocking();
+        testNonBlockingSelector();
     }
 
     public static void testBlocking() throws IOException {
@@ -88,6 +86,50 @@ public class P022Server {
                 System.out.println();
                 buffer.clear();
                 log.debug("数据读取完成 -- {}", channel);
+            }
+        }
+    }
+
+    public static void testNonBlockingSelector() throws IOException {
+        ServerSocketChannel ssc = ServerSocketChannel.open();
+        ssc.configureBlocking(false);
+        Selector selector = Selector.open();
+
+        SelectionKey selectionKey = ssc.register(selector, 0, null);
+        selectionKey.interestOps(SelectionKey.OP_ACCEPT);
+        ssc.bind(new InetSocketAddress(8080));
+        log.debug("selectionKey {}", selectionKey);
+
+        while (true) {
+            selector.select();
+            Set<SelectionKey> keys = selector.selectedKeys();
+            Iterator<SelectionKey> iterator = keys.iterator();
+
+            while (iterator.hasNext()) {
+                SelectionKey key = iterator.next();
+                log.debug("key {}", key);
+                if (key.isAcceptable()) {
+                    ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+                    SocketChannel sc = channel.accept();
+                    sc.configureBlocking(false);
+                    SelectionKey scKey = sc.register(selector, 0, null);
+                    scKey.interestOps(SelectionKey.OP_READ);
+                    log.debug("建立连接 {}", channel);
+                } else if (key.isReadable()) {
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    ByteBuffer buffer = ByteBuffer.allocate(1024);
+                    channel.read(buffer);
+                    buffer.flip();
+                    byte[] bytes = new byte[buffer.remaining()];
+                    int index = 0;
+                    while (buffer.hasRemaining()) {
+                        bytes[index++] = buffer.get();
+                    }
+                    String s = new String(bytes);
+                    log.debug("RECEIVED STRING IS {}", s);
+                }
+
+                iterator.remove();
             }
         }
     }
