@@ -21,6 +21,31 @@ public class P022Server {
         testNonBlockingSelector();
     }
 
+    public static void split(ByteBuffer source) throws IOException {
+        source.flip();
+
+        for (int i = 0; i < source.limit(); i++) {
+            if(source.get(i) == '\n') {
+                int length = i + 1 - source.position();
+                ByteBuffer target = ByteBuffer.allocate(length);
+                for (int j = 0; j < length; j++) {
+                    target.put(source.get());
+                }
+                printAll(target);
+            }
+        }
+        source.compact();
+    }
+
+    public static void printAll(ByteBuffer source) {
+        source.flip();
+        System.out.println("start print---------------------------------");
+        for (int i = 0; i < source.limit(); i++) {
+            System.out.print((char) source.get());
+        }
+        System.out.println("end print---------------------------------");
+    }
+
     public static void testBlocking() throws IOException {
         ServerSocketChannel ssc = ServerSocketChannel.open();
 
@@ -112,21 +137,30 @@ public class P022Server {
                     ServerSocketChannel channel = (ServerSocketChannel) key.channel();
                     SocketChannel sc = channel.accept();
                     sc.configureBlocking(false);
-                    SelectionKey scKey = sc.register(selector, 0, null);
+                    ByteBuffer buffer = ByteBuffer.allocate(8);
+                    SelectionKey scKey = sc.register(selector, 0, buffer);
                     scKey.interestOps(SelectionKey.OP_READ);
                     log.debug("建立连接 {}", channel);
                 } else if (key.isReadable()) {
-                    SocketChannel channel = (SocketChannel) key.channel();
-                    ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    channel.read(buffer);
-                    buffer.flip();
-                    byte[] bytes = new byte[buffer.remaining()];
-                    int index = 0;
-                    while (buffer.hasRemaining()) {
-                        bytes[index++] = buffer.get();
+                    try {
+                        SocketChannel channel = (SocketChannel) key.channel();
+                        ByteBuffer buffer = (ByteBuffer) key.attachment();
+                        if(channel.read(buffer) == -1){
+                            key.cancel();
+                            continue;
+                        }
+                        split(buffer);
+                        // 扩容buffer
+                        if(buffer.position() == buffer.limit()){
+                            ByteBuffer newBuffer = ByteBuffer.allocate(buffer.capacity() << 1);
+                            buffer.flip();
+                            newBuffer.put(buffer);
+                            key.attach(newBuffer);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        key.cancel();
                     }
-                    String s = new String(bytes);
-                    log.debug("RECEIVED STRING IS {}", s);
                 }
 
                 iterator.remove();

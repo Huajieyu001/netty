@@ -22,9 +22,14 @@ public class P022Client {
 
             System.out.println("Connected to server");
 
-            Thread.sleep(20000);
+            Thread.sleep(300);
 
-            sc.write(Charset.defaultCharset().encode(UUID.randomUUID().toString()));
+//            sc.write(Charset.defaultCharset().encode(UUID.randomUUID().toString()));
+            sc.write(Charset.defaultCharset().encode("1111122222333334444455555\n"));
+            sc.write(Charset.defaultCharset().encode("江畔何人初见月\n"));
+
+            System.out.println("Sending data");
+            sc.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
