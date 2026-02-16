@@ -19,6 +19,7 @@ public class P079ByteBuf {
     public static void main(String[] args) {
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        System.out.println(buf.getClass());
 
         NettyUtils.log(buf);
         StringBuilder sb = new StringBuilder();
