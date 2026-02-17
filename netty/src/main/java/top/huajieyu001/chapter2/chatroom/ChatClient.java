@@ -134,6 +134,20 @@ public class ChatClient {
                                             latch.countDown();
 //                                            super.channelRead(ctx, msg);
                                         }
+
+                                        // 在连接断开时触发
+                                        @Override
+                                        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+                                            log.debug("连接已经断开，按任意键退出..");
+                                            EXIT.set(true);
+                                        }
+
+                                        // 在出现异常时触发
+                                        @Override
+                                        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+                                            log.debug("连接已经断开，按任意键退出..{}", cause.getMessage());
+                                            EXIT.set(true);
+                                        }
                                     });
                         }
                     }).connect("127.0.0.1", 8080);
