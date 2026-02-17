@@ -15,6 +15,7 @@ import top.huajieyu001.chapter2.chatroom.protocol.MessageCodecSharable;
 import top.huajieyu001.chapter2.chatroom.protocol.ProtocolFrameDecoder;
 import top.huajieyu001.chapter2.chatroom.server.service.UserService;
 import top.huajieyu001.chapter2.chatroom.server.service.UserServiceFactory;
+import top.huajieyu001.chapter2.chatroom.server.session.SessionFactory;
 
 /**
  * @Author huajieyu
@@ -54,6 +55,7 @@ public class ChatServer {
                                     LoginResponseMessage response = null;
                                     if (flag) {
                                         response = new LoginResponseMessage(true, "success");
+                                        SessionFactory.getSession().bind(channelHandlerContext.channel(), username);
                                     } else {
                                         response = new LoginResponseMessage(false, "login failed");
                                     }
