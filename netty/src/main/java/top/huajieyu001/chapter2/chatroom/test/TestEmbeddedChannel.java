@@ -7,6 +7,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.logging.LoggingHandler;
 import top.huajieyu001.chapter2.chatroom.message.LoginRequestMessage;
 import top.huajieyu001.chapter2.chatroom.protocol.MessageCodec;
+import top.huajieyu001.chapter2.chatroom.protocol.MessageCodecSharable;
 
 /**
  * @Author huajieyu
@@ -17,20 +18,20 @@ import top.huajieyu001.chapter2.chatroom.protocol.MessageCodec;
 public class TestEmbeddedChannel {
 
     public static void main(String[] args) {
-        testDecoderResolveHalfPackageAndPastePackage();
+        testDecoderSharableResolveHalfPackageAndPastePackage();
     }
 
     public static void testEncoder() {
         EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(), new MessageCodec());
 
-        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456", "张三");
+        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456");
         channel.writeOutbound(loginRequestMessage);
     }
 
     public static void testDecoder() {
         EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(), new MessageCodec());
 
-        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456", "张三");
+        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456");
         MessageCodec messageCodec = new MessageCodec();
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
@@ -44,7 +45,7 @@ public class TestEmbeddedChannel {
     public static void testDecoderHalfPackage() {
         EmbeddedChannel channel = new EmbeddedChannel(new LoggingHandler(), new MessageCodec());
 
-        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456", "张三");
+        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456");
         MessageCodec messageCodec = new MessageCodec();
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
@@ -68,7 +69,7 @@ public class TestEmbeddedChannel {
                 new LoggingHandler(),
                 new MessageCodec());
 
-        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456", "张三");
+        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456");
         MessageCodec messageCodec = new MessageCodec();
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
@@ -83,10 +84,27 @@ public class TestEmbeddedChannel {
         channel.writeInbound(slice2);
     }
 
-    public static void testEncoderResolveHalfPackageAndPastePackage() {
-        EmbeddedChannel channel = new EmbeddedChannel(new LengthFieldBasedFrameDecoder(1024, 12, 4, 0, 0), new LoggingHandler(), new MessageCodec());
+    /**
+     * 使用LengthFieldBasedFrameDecoder解决半包问题
+     */
+    public static void testDecoderSharableResolveHalfPackageAndPastePackage() {
+        EmbeddedChannel channel = new EmbeddedChannel(
+                new LengthFieldBasedFrameDecoder(1024, 12, 4, 0, 0),
+                new LoggingHandler(),
+                new MessageCodecSharable());
 
-        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "123456", "张三");
-        channel.writeOutbound(loginRequestMessage);
+        LoginRequestMessage loginRequestMessage = new LoginRequestMessage("zhangsan", "988");
+        MessageCodec messageCodec = new MessageCodec();
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            messageCodec.encode(null, loginRequestMessage, buf);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        ByteBuf slice1 = buf.slice(0, 100);
+        slice1.retain();
+        ByteBuf slice2 = buf.slice(100, buf.readableBytes() - 100);
+        channel.writeInbound(slice1);
+        channel.writeInbound(slice2);
     }
 }
